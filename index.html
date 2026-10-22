@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Repertoire</title>
+<meta name="description" content="My guitar songs: by heart, almost, with tab and want to learn.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Repertoire">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f2f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161412" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column, sticky header with status tabs, song list as fret-marked rows, bottom sheet for editing */
+:root {
+  --bg: #f2f4f1;
+  --surface: #ffffff;
+  --ink: #2b211c;
+  --muted: #6d665f;
+  --line: #dcdfd8;
+  --accent: #a4561f;
+  --accent-ink: #ffffff;
+  --know: #2f6b4f;
+  --learning: #b07a12;
+  --want: #5a5f9e;
+  --chip: #e7eae4;
+  --shadow: 0 10px 30px rgba(43, 33, 28, .12);
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Figtree", -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161412; --surface: #211e1b; --ink: #f1ece6; --muted: #a59d94; --line: #36312c;
+    --accent: #e08a4a; --accent-ink: #1b1410; --know: #6cc49a; --learning: #e2b14a; --want: #a3a8f0;
+    --chip: #2c2824; --shadow: 0 10px 30px rgba(0, 0, 0, .5); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161412; --surface: #211e1b; --ink: #f1ece6; --muted: #a59d94; --line: #36312c;
+  --accent: #e08a4a; --accent-ink: #1b1410; --know: #6cc49a; --learning: #e2b14a; --want: #a3a8f0;
+  --chip: #2c2824; --shadow: 0 10px 30px rgba(0, 0, 0, .5); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font: 16px/1.45 var(--body);
+  -webkit-tap-highlight-color: transparent;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap {
+  max-width: 640px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); padding-block: 14px 10px; border-bottom: 1px solid var(--line);
+}
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { font: 800 1.75rem/1.1 var(--display); margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.count { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.btn {
+  border: 0; border-radius: 999px; padding: 10px 16px; font-weight: 600;
+  background: var(--accent); color: var(--accent-ink); display: inline-flex; align-items: center; gap: 6px;
+}
+.btn.ghost { background: var(--chip); color: var(--ink); }
+.btn.danger { background: transparent; color: #c0392b; padding-inline: 4px; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 12px; background: var(--chip); padding: 4px; border-radius: 12px; }
+.tab { border: 0; background: transparent; border-radius: 9px; padding: 8px 4px; font-weight: 600; font-size: .9rem; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.tab .n { font-weight: 500; opacity: .7; font-variant-numeric: tabular-nums; }
+.tools { display: flex; gap: 8px; margin-top: 10px; }
+.search { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 9px 12px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: .85rem; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+select.chip { appearance: none; padding-right: 11px; }
+
+main { padding-block: 16px 120px; display: grid; gap: 16px; }
+.surprise { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border-radius: 12px; background: var(--chip); }
+.surprise .label { font-size: .8rem; color: var(--muted); flex: none; }
+.surprise .pick { flex: 1; min-width: 0; border: 0; background: transparent; padding: 4px 0; text-align: left; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.surprise .pick span { font-weight: 400; color: var(--muted); }
+.surprise .icon-btn { height: 34px; width: 34px; flex: none; background: var(--surface); }
+.sorter { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: .85rem; }
+.sorter select { border: 0; background: transparent; font-weight: 600; color: var(--ink); }
+
+.list { list-style: none; margin: 0; padding: 0; display: grid; }
+.song {
+  display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center;
+  padding: 12px 4px; border-bottom: 1px solid var(--line); cursor: pointer;
+}
+.song:last-child { border-bottom: 0; }
+.fret {
+  width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; text-align: center;
+  background: var(--chip); font: 800 1.05rem/1 var(--display); font-variant-numeric: tabular-nums;
+}
+.fret small { display: block; font: 600 .55rem/1 var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.fret.open { color: var(--know); }
+.meta { min-width: 0; }
+.title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sub { color: var(--muted); font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.tag { font-size: .7rem; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--chip); color: var(--muted); }
+.tag.lang { text-transform: uppercase; letter-spacing: .05em; }
+.played { color: var(--muted); font-size: .75rem; text-align: right; white-space: nowrap; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+
+.empty { text-align: center; padding: 40px 12px; color: var(--muted); display: grid; gap: 12px; justify-items: center; }
+.empty h2 { font: 800 1.3rem/1.2 var(--display); color: var(--ink); margin: 0; text-wrap: balance; }
+.empty p { margin: 0; max-width: 34ch; }
+
+.fab {
+  position: fixed; right: max(16px, calc(env(safe-area-inset-right, 0px) + 16px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); z-index: 6;
+  box-shadow: var(--shadow); padding: 14px 20px; font-size: 1rem;
+}
+
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.sheet {
+  background: var(--surface); width: 100%; max-width: 640px; max-height: 92%; overflow-y: auto;
+  border-radius: 20px 20px 0 0; box-shadow: var(--shadow);
+  padding-block: 18px calc(env(safe-area-inset-bottom, 0px) + 18px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 14px;
+}
+.sheet h2 { font: 800 1.3rem/1.2 var(--display); margin: 0; }
+.field { display: grid; gap: 4px; }
+.field label, .group-label { font-size: .8rem; font-weight: 600; color: var(--muted); }
+.field input, .field select, .field textarea {
+  border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; width: 100%;
+}
+.suggest { list-style: none; margin: 4px 0 0; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); display: grid; gap: 2px; }
+.suggest li { padding: 8px 10px; border-radius: 8px; cursor: pointer; display: grid; }
+.suggest li:hover, .suggest li:focus-visible { background: var(--chip); }
+.suggest .st { font-weight: 600; }
+.suggest .sa { font-size: .8rem; color: var(--muted); }
+.suggest .hint { font-size: .8rem; color: var(--muted); padding: 6px 10px; cursor: default; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--chip); padding: 4px; border-radius: 12px; }
+.seg button { border: 0; background: transparent; border-radius: 9px; padding: 8px 4px; font-weight: 600; font-size: .88rem; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.capo-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.capo-row button { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.capo-row button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+.actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.actions .right { display: flex; gap: 8px; }
+.confirm { background: var(--chip); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
+.note { font-size: .8rem; color: var(--muted); }
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-size: .9rem; z-index: 30;
+}
+.tabs.five { grid-template-columns: repeat(5, 1fr); gap: 2px; }
+.tabs.five .tab { font-size: .74rem; line-height: 1.15; padding-inline: 2px; }
+.tabs.five .n { display: block; }
+.seg.four { grid-template-columns: repeat(4, 1fr); }
+.seg.four button { font-size: .8rem; }
+.legend { font-size: .78rem; color: var(--muted); margin-top: 6px; }
+.links { display: flex; gap: 6px; flex-wrap: wrap; }
+.linkbtn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 11px; border-radius: 999px; background: var(--chip); color: var(--ink); font-size: .85rem; font-weight: 600; text-decoration: none; }
+.link-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.icon-btn { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; width: 40px; font-size: 1rem; color: var(--muted); }
+.small { padding: 6px 12px; font-size: .85rem; }
+.set-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 4px; cursor: pointer; text-align: left; width: 100%; }
+.set-card .name { font: 800 1.15rem/1.2 var(--display); }
+.set-head { display: grid; gap: 10px; }
+.set-head .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.set-name { font: 800 1.4rem/1.2 var(--display); border: 0; background: transparent; padding: 0; width: 100%; min-width: 0; }
+.set-song { display: grid; grid-template-columns: 28px 44px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.set-song .num { font: 800 1rem/1 var(--display); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.set-song .ctl { display: flex; gap: 2px; }
+.set-song .ctl button { border: 0; background: transparent; color: var(--muted); width: 30px; height: 34px; border-radius: 8px; font-size: 1rem; }
+.set-song .ctl button:disabled { opacity: .25; }
+.pick-list { list-style: none; margin: 0; padding: 0; display: grid; max-height: 45vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; }
+.pick-list label { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.pick-list li:last-child label { border-bottom: 0; }
+.pick-list input { width: 20px; height: 20px; accent-color: var(--accent); }
+.backup { margin-top: 32px; padding: 14px; border-radius: 14px; border: 1px dashed var(--line); display: grid; gap: 10px; font-size: .85rem; color: var(--muted); }
+.backup strong { color: var(--ink); display: block; }
+.backup .row { display: flex; gap: 8px; flex-wrap: wrap; }
+label.btn { cursor: pointer; }
+@media (prefers-reduced-motion: no-preference) {
+  .sheet { animation: up .22s ease-out; }
+  @keyframes up { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>My Repertoire</h1>
+        <div class="count" id="count">Loading your songs…</div>
+      </div>
+    </div>
+    <div class="tabs five" role="tablist">
+      <button class="tab" role="tab" data-status="memory" aria-selected="true">By heart <span class="n" id="n-memory"></span></button>
+      <button class="tab" role="tab" data-status="almost" aria-selected="false">Almost <span class="n" id="n-almost"></span></button>
+      <button class="tab" role="tab" data-status="tab" aria-selected="false">With tab <span class="n" id="n-tab"></span></button>
+      <button class="tab" role="tab" data-status="want" aria-selected="false">Want to learn <span class="n" id="n-want"></span></button>
+      <button class="tab" role="tab" data-status="sets" aria-selected="false">Setlists <span class="n" id="n-sets"></span></button>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="tools" id="tools">
+      <input class="search" id="q" type="search" placeholder="Search title or artist" autocomplete="off">
+    </div>
+    <div class="chips" id="chips">
+      <button class="chip" id="f-nocapo" aria-pressed="false">No capo needed</button>
+      <button class="chip" id="f-easy" aria-pressed="false">Easy to sing</button>
+      <button class="chip" id="f-finger" aria-pressed="false">Fingerpicking</button>
+      <select class="chip" id="f-lang" aria-label="Language"><option value="">Any language</option></select>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="surprise" id="surprise" hidden>
+    <span class="label" id="surprise-label">Suggestion:</span>
+    <button type="button" class="pick" id="pick" title="Open this song"></button>
+    <button type="button" class="icon-btn" id="shuffle" aria-label="Suggest another song" title="Suggest another song">↻</button>
+  </section>
+
+  <div class="sorter" id="sorter" hidden>
+    <span id="shown"></span>
+    <label>Sort
+      <select id="sort">
+        <option value="az">Title A–Z</option>
+        <option value="artist">Artist</option>
+        <option value="new">Recently added</option>
+      </select>
+    </label>
+  </div>
+
+  <ul class="list" id="list"></ul>
+
+  <div class="empty" id="empty" hidden></div>
+
+  <section id="sets" hidden></section>
+
+  <footer class="backup" id="backup">
+    <div>
+      <strong>Your songs live on this iPhone.</strong>
+      <span id="backup-note">Save a backup to iCloud Drive now and then, so you never lose them.</span>
+    </div>
+    <div class="row">
+      <button type="button" class="btn ghost small" id="do-backup">Back up</button>
+      <label class="btn ghost small" for="restore-file" tabindex="0">Restore</label>
+      <input type="file" id="restore-file" accept="application/json,.json" hidden>
+    </div>
+    <div class="confirm" id="restore-confirm" hidden></div>
+  </footer>
+</main>
+
+<button class="btn fab" id="add">+ Add song</button>
+
+<div class="scrim" id="scrim" hidden>
+  <form class="sheet" id="form" autocomplete="off">
+    <h2 id="form-title">Add a song</h2>
+    <div class="field"><label for="s-title">Song</label><input id="s-title" required placeholder="Start typing a song title"><ul class="suggest" id="suggest" hidden></ul></div>
+    <div class="links"><a class="note" id="s-spotify" href="#" target="_blank" rel="noopener" hidden style="color:var(--accent);font-weight:600">Listen on Spotify ↗</a><a class="note" id="s-apple" href="#" target="_blank" rel="noopener" hidden style="color:var(--accent);font-weight:600">Open in Apple Music ↗</a></div>
+    <div class="field"><label for="s-artist">Artist</label><input id="s-artist" placeholder="e.g. Oasis"></div>
+    <div class="field">
+      <span class="group-label">Status</span>
+      <div class="seg four" id="s-status">
+        <button type="button" data-v="memory">By heart</button>
+        <button type="button" data-v="almost">Almost</button>
+        <button type="button" data-v="tab">With tab</button>
+        <button type="button" data-v="want">Want to learn</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="group-label">Capo fret</span>
+      <div class="capo-row" id="s-capo"></div>
+    </div>
+    <div class="two">
+      <div class="field"><label for="s-lang">Language</label><input id="s-lang" list="langs" placeholder="e.g. Portuguese"></div>
+      <div class="field"><label for="s-key">Key / chords</label><input id="s-key" placeholder="e.g. G, Em, C, D"></div>
+    </div>
+    <datalist id="langs"></datalist>
+    <div>
+      <label class="toggle" for="s-nocapo"><span>Sounds fine without a capo</span><input type="checkbox" id="s-nocapo"></label>
+      <label class="toggle" for="s-easy"><span>Easy to sing</span><input type="checkbox" id="s-easy"></label>
+      <label class="toggle" for="s-finger"><span>Fingerpicking</span><input type="checkbox" id="s-finger"></label>
+    </div>
+    <div class="field">
+      <span class="group-label">Tabs &amp; videos</span>
+      <div class="links" id="s-link-view"></div>
+      <div id="s-links" style="display:grid;gap:6px"></div>
+      <div><button type="button" class="btn ghost small" id="add-link">+ Add a link</button></div>
+    </div>
+    <div class="field"><label for="s-notes">Notes</label><textarea id="s-notes" rows="3" placeholder="Strumming pattern, tricky bridge, tuning…"></textarea></div>
+    <div class="confirm" id="confirm" hidden>
+      <span>Delete this song for good?</span>
+      <div class="right" style="display:flex;gap:8px"><button type="button" class="btn" id="confirm-yes" style="background:#c0392b;color:#fff">Delete</button><button type="button" class="btn ghost" id="confirm-no">Keep it</button></div>
+    </div>
+    <div class="actions">
+      <div style="display:flex;gap:4px;align-items:center"><button type="button" class="btn danger" id="del" hidden>Delete</button></div>
+      <span></span>
+      <div class="right">
+        <button type="button" class="btn ghost" id="cancel">Cancel</button>
+        <button type="submit" class="btn" id="save">Save</button>
+      </div>
+    </div>
+    <p class="note" id="paste-link-wrap"><button type="button" class="btn ghost" id="to-paste" style="padding:6px 12px;font-size:.85rem">Paste a whole list instead</button></p>
+  </form>
+
+  <form class="sheet" id="paste" hidden>
+    <h2>Paste a list of songs</h2>
+    <p class="note">One song per line. Write "Song - Artist" to include the artist. Duplicates you already have are skipped.</p>
+    <div class="field"><label for="p-text">Songs</label><textarea id="p-text" rows="9" placeholder="Wonderwall - Oasis&#10;Chuva - Mariza&#10;Hallelujah - Jeff Buckley"></textarea></div>
+    <div class="field">
+      <span class="group-label">Add them as</span>
+      <div class="seg four" id="p-status">
+        <button type="button" data-v="memory">By heart</button>
+        <button type="button" data-v="almost">Almost</button>
+        <button type="button" data-v="tab">With tab</button>
+        <button type="button" data-v="want">Want to learn</button>
+      </div>
+    </div>
+    <div class="field"><label for="p-lang">Language (optional, for all of them)</label><input id="p-lang" list="langs"></div>
+    <div class="actions"><span></span><div class="right"><button type="button" class="btn ghost" id="p-cancel">Cancel</button><button type="submit" class="btn">Add songs</button></div></div>
+  </form>
+
+  <form class="sheet" id="picker" hidden>
+    <h2>Add songs to the setlist</h2>
+    <input class="search" id="k-q" type="search" placeholder="Search your songs" autocomplete="off">
+    <div class="chips" style="margin-top:0">
+      <button type="button" class="chip" id="k-nocapo" aria-pressed="false">No capo needed</button>
+      <button type="button" class="chip" id="k-easy" aria-pressed="false">Easy to sing</button>
+      <button type="button" class="chip" id="k-learning" aria-pressed="false">Include With tab</button>
+      <select class="chip" id="k-lang" aria-label="Language"></select>
+    </div>
+    <ul class="pick-list" id="k-list"></ul>
+    <div class="row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span class="note">Or pick at random:</span>
+      <select class="chip" id="k-n" aria-label="How many random songs"><option>3</option><option selected>5</option><option>8</option><option>10</option><option>15</option></select>
+      <button type="button" class="btn ghost small" id="k-random">🎲 Pick at random</button>
+    </div>
+    <div class="actions"><span class="note" id="k-count"></span><div class="right"><button type="button" class="btn ghost" id="k-cancel">Cancel</button><button type="submit" class="btn" id="k-add">Add</button></div></div>
+  </form>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const STATUS_LABEL = { memory: "By heart", almost: "Almost", tab: "With tab", want: "Want to learn" };
+  const STATUS_HINT = {
+    memory: "Songs you can play from memory.",
+    almost: "Songs you could play from memory with a little practice.",
+    tab: "Songs you can play while looking at the tab.",
+    want: "Songs you'd like to learn.",
+    sets: "Plan what to play for a jam or a night with friends.",
+  };
+  // Older entries used know/learning; map them onto the new lists.
+  const fixStatus = (s) => ({ ...s, status: { know: "memory", learning: "tab" }[s.status] || s.status || "memory" });
+  const PLAYABLE = ["memory", "almost"];
+  const STORE_KEY = "repertoire-songs-v1";
+  let songs = [];           // [{id, ...fields}]
+  let setlists = [];        // [{id, name, songIds, created}]
+  let view = { status: "memory", q: "", nocapo: false, easy: false, finger: false, lang: "", sort: "az", setId: null };
+  let editing = null;       // id or null
+  let draft = {};
+  let pickId = null;
+
+  try { Object.assign(view, JSON.parse(localStorage.getItem("repertoire-view") || "{}")); } catch (e) {}
+  if (!STATUS_HINT[view.status]) view.status = "memory";
+  if (!["az", "artist", "new"].includes(view.sort)) view.sort = "az";
+  const saveView = () => { try { localStorage.setItem("repertoire-view", JSON.stringify(view)); } catch (e) {} };
+
+  // ---------- storage ----------
+  const local = {
+    load() {
+      try { songs = JSON.parse(localStorage.getItem(STORE_KEY) || "[]").map(fixStatus); } catch (e) { songs = []; }
+      try { setlists = JSON.parse(localStorage.getItem(STORE_KEY + "-sets") || "[]"); } catch (e) { setlists = []; }
+    },
+    save() {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(songs)); localStorage.setItem(STORE_KEY + "-sets", JSON.stringify(setlists)); }
+      catch (e) { toast("Couldn't save on this device. Is storage full?"); throw e; }
+    },
+  };
+  const arrFor = (coll) => coll === "songs" ? songs : setlists;
+  async function writeDoc(coll, id, data) {
+    const arr = arrFor(coll), i = arr.findIndex(s => s.id === id);
+    if (i >= 0) arr[i] = { id, ...data }; else arr.push({ id, ...data });
+    local.save(); render();
+  }
+  async function removeDoc(coll, id) {
+    const arr = arrFor(coll), i = arr.findIndex(s => s.id === id);
+    if (i >= 0) arr.splice(i, 1);
+    local.save(); render();
+  }
+  const writeSong = (id, data) => writeDoc("songs", id, data);
+  const removeSong = (id) => removeDoc("songs", id);
+
+  // ---------- links (tabs, videos) ----------
+  const safeUrl = (u) => {
+    u = (u || "").trim(); if (!u) return "";
+    if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    try { const x = new URL(u); return /^https?:$/.test(x.protocol) && x.hostname.includes(".") ? x.href : ""; } catch (e) { return ""; }
+  };
+  function linkLabel(u) {
+    let h = ""; try { h = new URL(u).hostname.replace(/^www\.|^m\./, ""); } catch (e) {}
+    if (/youtube\.com|youtu\.be|vimeo\.com|tiktok\.com|instagram\.com/.test(h)) return "▶ Video";
+    if (/ultimate-guitar|songsterr|cifraclub|cifras|chordify|e-chords|chordu|guitartabs|tabs|acordes|chords/.test(h + u)) return "♫ Tab";
+    if (/spotify\.com/.test(h)) return "Spotify";
+    if (/music\.apple\.com/.test(h)) return "♪ Apple Music";
+    return "↗ " + (h || "Link");
+  }
+  function linkChips(s, box) {
+    box.replaceChildren();
+    const urls = [...(s.links || [])]; if (s.appleUrl) urls.push(s.appleUrl); if (s.spotifyUrl) urls.push(s.spotifyUrl);
+    for (const u of urls) {
+      const href = safeUrl(u); if (!href) continue;
+      const a = el("a", "linkbtn", linkLabel(href)); a.href = href; a.target = "_blank"; a.rel = "noopener";
+      box.append(a);
+    }
+    box.hidden = !box.childElementCount;
+  }
+  const songById = (id) => songs.find(s => s.id === id);
+  const newId = () => "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const clean = (s) => { const { id, lastPlayed, ...rest } = s; return rest; };
+
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 2200);
+  }
+
+  // ---------- derived ----------
+  const norm = (s) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  function filtered(status = view.status) {
+    const q = norm(view.q);
+    return songs.filter(s => s.status === status)
+      .filter(s => !q || norm(s.title).includes(q) || norm(s.artist).includes(q))
+      .filter(s => !view.nocapo || !s.capo || s.noCapoOk)
+      .filter(s => !view.easy || s.easySing)
+      .filter(s => !view.finger || s.fingerpicking)
+      .filter(s => !view.lang || norm(s.lang) === norm(view.lang));
+  }
+  function sorted(list) {
+    const by = {
+      az: (a, b) => a.title.localeCompare(b.title),
+      artist: (a, b) => (a.artist || "~").localeCompare(b.artist || "~") || a.title.localeCompare(b.title),
+      new: (a, b) => (b.created || "").localeCompare(a.created || ""),
+    }[view.sort];
+    return list.slice().sort(by);
+  }
+
+  // ---------- render ----------
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function render() {
+    $("legend").textContent = STATUS_HINT[view.status];
+    $("f-finger").setAttribute("aria-pressed", String(view.finger));
+    for (const s of ["memory", "almost", "tab", "want"]) $("n-" + s).textContent = songs.filter(x => x.status === s).length || "";
+    $("n-sets").textContent = setlists.length || "";
+    const onSets = view.status === "sets";
+    for (const id of ["tools", "chips", "list"]) $(id).hidden = onSets;
+    $("sets").hidden = !onSets;
+    $("add").textContent = onSets ? "+ New setlist" : "+ Add song"; $("add").hidden = false;
+    document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.status === view.status)));
+    $("f-nocapo").setAttribute("aria-pressed", String(view.nocapo));
+    $("f-easy").setAttribute("aria-pressed", String(view.easy));
+    $("q").value = view.q; $("sort").value = view.sort;
+
+    const langs = [...new Set(songs.map(s => (s.lang || "").trim()).filter(Boolean))].sort();
+    const fl = $("f-lang");
+    fl.replaceChildren(new Option("Any language", ""), ...langs.map(l => new Option(l, l)));
+    if (view.lang && !langs.includes(view.lang)) view.lang = "";
+    fl.value = view.lang; fl.setAttribute("aria-pressed", String(!!view.lang));
+    fl.hidden = langs.length === 0;
+    $("langs").replaceChildren(...[...new Set([...langs, "English", "Portuguese", "Spanish", "French"])].map(l => new Option(l)));
+
+    const known = songs.filter(s => s.status === "memory").length;
+    $("count").textContent = songs.length ? `${known} song${known === 1 ? "" : "s"} by heart` : "Your guitar songs, all in one place";
+
+    if (onSets) { $("surprise").hidden = $("sorter").hidden = $("empty").hidden = true; renderSets(); return; }
+    const list = sorted(filtered());
+    const pickPool = PLAYABLE.includes(view.status) ? filtered(view.status) : [];
+    $("surprise").hidden = pickPool.length < 2;
+    $("surprise-label").textContent = view.status === "almost" ? "Practise:" : "Suggestion:";
+    if (pickPool.length && !pickPool.some(s => s.id === pickId)) shuffle(true);
+    $("sorter").hidden = list.length === 0;
+    $("shown").textContent = `${list.length} shown`;
+    renderPick();
+
+    const ul = $("list"); ul.replaceChildren();
+    for (const s of list) {
+      const li = el("li", "song"); li.tabIndex = 0; li.dataset.id = s.id;
+      const fret = el("div", "fret" + (s.capo ? "" : " open"));
+      fret.append(s.capo ? String(s.capo) : "0", el("small", null, s.capo ? "capo" : "open"));
+      fret.title = s.capo ? `Capo on fret ${s.capo}` : "No capo";
+      const meta = el("div", "meta");
+      meta.append(el("div", "title", s.title), el("div", "sub", s.artist || "Unknown artist"));
+      const tags = el("div", "tags");
+      if (s.lang) tags.append(el("span", "tag lang", s.lang));
+      if (s.capo && s.noCapoOk) tags.append(el("span", "tag", "OK without capo"));
+      if (s.easySing) tags.append(el("span", "tag", "Easy to sing"));
+      if (s.fingerpicking) tags.append(el("span", "tag", "Fingerpicking"));
+      for (const u of (s.links || [])) { const h = safeUrl(u); if (h) tags.append(el("span", "tag", linkLabel(h).replace(/^↗ .*/, "↗ Link"))); }
+      if (tags.childElementCount) meta.append(tags);
+      const right = el("div");
+      li.append(fret, meta, right);
+      ul.append(li);
+    }
+
+    const empty = $("empty");
+    empty.replaceChildren();
+    if (list.length === 0) {
+      empty.hidden = false;
+      const filtersOn = view.q || view.nocapo || view.easy || view.finger || view.lang;
+      if (!songs.length) {
+        empty.append(el("h2", null, "Start with the songs you already know"),
+          el("p", null, "Add them one at a time, or paste a whole list from your Notes app. Then use Surprise me whenever you can't remember what to play."));
+        const r = el("div"); r.style.display = "flex"; r.style.gap = "8px"; r.style.flexWrap = "wrap"; r.style.justifyContent = "center";
+        const a = el("button", "btn", "+ Add a song"); a.onclick = () => openForm();
+        const p = el("button", "btn ghost", "Paste a list"); p.onclick = openPaste;
+        r.append(a, p); empty.append(r);
+      } else if (filtersOn) {
+        empty.append(el("h2", null, "No songs match these filters"));
+        const c = el("button", "btn ghost", "Clear filters");
+        c.onclick = () => { Object.assign(view, { q: "", nocapo: false, easy: false, finger: false, lang: "" }); saveView(); render(); };
+        empty.append(c);
+      } else {
+        empty.append(el("h2", null, `Nothing in ${STATUS_LABEL[view.status]} yet`),
+          el("p", null, STATUS_HINT[view.status]));
+      }
+    } else empty.hidden = true;
+  }
+
+  function renderPick() {
+    const s = songById(pickId), p = $("pick");
+    p.replaceChildren();
+    if (s) p.append(s.title, el("span", null, s.artist ? " · " + s.artist : ""));
+  }
+
+  function shuffle(quiet) {
+    const pool = filtered(view.status);
+    if (!pool.length) { pickId = null; if (quiet !== true) toast("No songs here match your filters"); return; }
+    const others = pool.length > 1 ? pool.filter(s => s.id !== pickId) : pool;
+    pickId = others[Math.floor(Math.random() * others.length)].id; renderPick();
+  }
+
+
+  // ---------- add / edit sheet ----------
+  const capoRow = $("s-capo");
+  for (let f = 0; f <= 7; f++) {
+    const b = el("button", null, f === 0 ? "None" : String(f)); b.type = "button"; b.dataset.v = f;
+    if (f === 0) b.style.fontSize = ".8rem";
+    capoRow.append(b);
+  }
+  function paintDraft() {
+    const sp = $("s-spotify"); sp.hidden = !draft.spotifyUrl; if (draft.spotifyUrl) sp.href = draft.spotifyUrl;
+    $("s-status").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === draft.status)));
+    capoRow.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.v === (draft.capo || 0))));
+    $("s-nocapo").disabled = !draft.capo;
+    $("s-nocapo").closest(".toggle").style.opacity = draft.capo ? 1 : .45;
+  }
+  function openForm(id) {
+    editing = id || null;
+    const s = songs.find(x => x.id === id);
+    draft = s ? { ...clean(s) } : { status: STATUS_LABEL[view.status] ? view.status : "memory", capo: 0 };
+    $("form-title").textContent = s ? "Edit song" : "Add a song";
+    $("s-title").value = draft.title || ""; $("s-artist").value = draft.artist || "";
+    $("s-lang").value = draft.lang || ""; $("s-key").value = draft.key || "";
+    $("s-notes").value = draft.notes || "";
+    const am = $("s-apple"); am.hidden = !draft.title && !draft.appleUrl;
+    am.href = draft.appleUrl || "https://music.apple.com/search?term=" + encodeURIComponent([draft.title, draft.artist].filter(Boolean).join(" "));
+    $("s-nocapo").checked = !!draft.noCapoOk; $("s-easy").checked = !!draft.easySing; $("s-finger").checked = !!draft.fingerpicking;
+    $("s-links").replaceChildren(); (draft.links || []).forEach(addLinkRow);
+    linkChips({ links: draft.links }, $("s-link-view"));
+    $("del").hidden = !s; $("confirm").hidden = true;
+    $("paste-link-wrap").hidden = !!s;
+    paintDraft();
+    $("form").hidden = false; $("paste").hidden = $("picker").hidden = true; $("scrim").hidden = false;
+    if (!s) setTimeout(() => $("s-title").focus(), 50);
+  }
+  function closeSheet() { $("scrim").hidden = true; editing = null; hideSuggest(); }
+  function addLinkRow(value) {
+    const row = el("div", "link-row");
+    const inp = el("input"); inp.type = "text"; inp.inputMode = "url"; inp.autocapitalize = "off"; inp.spellcheck = false; inp.placeholder = "Paste a tab or YouTube link"; inp.value = value || "";
+    inp.className = "link-input"; inp.style.cssText = "border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;min-width:0";
+    const x = el("button", "icon-btn", "×"); x.type = "button"; x.setAttribute("aria-label", "Remove link"); x.onclick = () => row.remove();
+    row.append(inp, x); $("s-links").append(row);
+    return inp;
+  }
+  $("add-link").onclick = () => addLinkRow("").focus();
+
+  // ---------- song suggestions while typing (Apple's song catalog) ----------
+  let suggestSeq = 0, suggestTimer = null;
+  const hideSuggest = () => { clearTimeout(suggestTimer); suggestSeq++; $("suggest").hidden = true; };
+  function showHint(text) { const u = $("suggest"); u.replaceChildren(el("li", "hint", text)); u.hidden = false; }
+  // "Wonderwall (Remastered)" / "Wonderwall - Remastered 2014" -> "Wonderwall"
+  const cleanTitle = (t) => t
+    .replace(/\s+[-–]\s+(\d{4}\s+)?(remaster|live|mono|stereo|single|radio|acoustic version|ao vivo|en vivo|demo).*$/i, "")
+    .replace(/\s*[([](\d{4}\s+)?(remaster|live|ao vivo|en vivo|radio edit|single version|mono|stereo)[^)\]]*[)\]]\s*$/i, "")
+    .trim();
+  const COUNTRY = (((navigator.language || "").split("-")[1]) || "PT").toUpperCase();
+  // Apple's search endpoint has no CORS headers, so it is called as JSONP.
+  function searchApple(term) {
+    return new Promise((resolve, reject) => {
+      const cb = "appleSearch" + Date.now() + Math.floor(Math.random() * 1e6);
+      const sc = document.createElement("script");
+      const done = () => { clearTimeout(t); delete window[cb]; sc.remove(); };
+      const t = setTimeout(() => { done(); reject(new Error("timeout")); }, 8000);
+      window[cb] = (data) => { done(); resolve(data); };
+      sc.onerror = () => { done(); reject(new Error("network")); };
+      sc.src = "https://itunes.apple.com/search?media=music&entity=song&limit=20&country=" + COUNTRY +
+        "&term=" + encodeURIComponent(term) + "&callback=" + cb;
+      document.head.append(sc);
+    });
+  }
+  async function fetchSuggestions(q) {
+    const seq = ++suggestSeq;
+    if (!navigator.onLine) { showHint("You're offline. Type the details yourself, or try again later."); return; }
+    showHint("Searching Apple Music…");
+    const artist = $("s-artist").value.trim();
+    try {
+      const res = await searchApple(q + (artist ? " " + artist : ""));
+      if (seq !== suggestSeq || $("s-title").value.trim() !== q) return;
+      const seen = new Set(), rows = [];
+      for (const t of (res && Array.isArray(res.results) ? res.results : [])) {
+        if (!t || !t.trackName) continue;
+        const title = cleanTitle(t.trackName), by = t.artistName || "";
+        const k = norm(title) + "|" + norm(by);
+        if (seen.has(k)) continue; seen.add(k);
+        rows.push({ title, artist: by, album: t.collectionName, url: /^https:\/\/music\.apple\.com\//.test(t.trackViewUrl || "") ? t.trackViewUrl.split("?")[0] + (t.trackViewUrl.includes("?i=") ? "?i=" + t.trackId : "") : "" });
+        if (rows.length === 6) break;
+      }
+      const u = $("suggest"); u.replaceChildren();
+      for (const r of rows) {
+        const li = el("li"); li.tabIndex = 0;
+        li.append(el("span", "st", r.title), el("span", "sa", [r.artist, r.album].filter(Boolean).join(" · ")));
+        const pick = () => {
+          $("s-title").value = r.title;
+          if (r.artist) $("s-artist").value = r.artist;
+          draft.title = r.title; draft.artist = r.artist;
+          if (r.url) draft.appleUrl = r.url;
+          paintDraft(); hideSuggest();
+        };
+        li.onclick = pick; li.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); pick(); } };
+        u.append(li);
+      }
+      if (!u.childElementCount) showHint("No matches. Keep typing, or enter it yourself.");
+    } catch (e) {
+      if (seq !== suggestSeq) return;
+      showHint("Song search isn't answering right now. You can type the details yourself.");
+    }
+  }
+  $("s-title").addEventListener("input", () => {
+    if (editing) return;
+    clearTimeout(suggestTimer);
+    const q = $("s-title").value.trim();
+    if (q.length < 3) { hideSuggest(); return; }
+    suggestTimer = setTimeout(() => fetchSuggestions(q), 450);
+  });
+  $("s-status").onclick = (e) => { const b = e.target.closest("button"); if (b) { draft.status = b.dataset.v; paintDraft(); } };
+  capoRow.onclick = (e) => { const b = e.target.closest("button"); if (b) { draft.capo = +b.dataset.v; paintDraft(); } };
+  $("form").onsubmit = async (e) => {
+    e.preventDefault();
+    const title = $("s-title").value.trim(); if (!title) return;
+    const data = {
+      ...draft, title, artist: $("s-artist").value.trim(), lang: $("s-lang").value.trim(),
+      key: $("s-key").value.trim(), notes: $("s-notes").value.trim(),
+      links: [...$("s-links").querySelectorAll(".link-input")].map(i => safeUrl(i.value)).filter(Boolean),
+      capo: draft.capo || 0, noCapoOk: !!draft.capo && $("s-nocapo").checked, easySing: $("s-easy").checked, fingerpicking: $("s-finger").checked,
+      created: draft.created || new Date().toISOString(),
+    };
+    const id = editing || newId();
+    $("save").disabled = true;
+    try { await writeSong(id, data); closeSheet(); toast(editing ? "Saved" : `Added to ${STATUS_LABEL[data.status]}`); if (data.status !== view.status) { view.status = data.status; saveView(); render(); } }
+    catch (err) { toast("Couldn't save. Try again in a moment."); }
+    finally { $("save").disabled = false; }
+  };
+  $("cancel").onclick = closeSheet;
+  $("del").onclick = () => { $("confirm").hidden = false; };
+  $("confirm-no").onclick = () => { $("confirm").hidden = true; };
+  $("confirm-yes").onclick = async () => {
+    const id = editing;
+    try {
+      await removeSong(id); if (pickId === id) pickId = null;
+      for (const sl of setlists.filter(x => (x.songIds || []).includes(id))) await writeDoc("setlists", sl.id, { ...clean(sl), songIds: sl.songIds.filter(x => x !== id) });
+      closeSheet(); toast("Deleted");
+    }
+    catch (e) { toast("Couldn't delete. Try again in a moment."); }
+  };
+  $("scrim").addEventListener("click", (e) => { if (e.target === $("scrim")) closeSheet(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("scrim").hidden) closeSheet(); });
+
+  // ---------- paste a list ----------
+  let pasteStatus = "memory";
+  function openPaste() {
+    pasteStatus = STATUS_LABEL[view.status] ? view.status : "memory";
+    $("p-status").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === pasteStatus)));
+    $("form").hidden = $("picker").hidden = true; $("paste").hidden = false; $("scrim").hidden = false;
+  }
+  $("to-paste").onclick = openPaste;
+  $("p-cancel").onclick = closeSheet;
+  $("p-status").onclick = (e) => {
+    const b = e.target.closest("button"); if (!b) return; pasteStatus = b.dataset.v;
+    $("p-status").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  };
+  $("paste").onsubmit = async (e) => {
+    e.preventDefault();
+    const have = new Set(songs.map(s => norm(s.title) + "|" + norm(s.artist)));
+    const lang = $("p-lang").value.trim();
+    const rows = $("p-text").value.split(/\n/).map(l => l.replace(/^\s*[-•*\d.)]+\s*/, "").trim()).filter(Boolean);
+    let added = 0;
+    for (const line of rows) {
+      const m = line.split(/\s+[-–—]\s+/);
+      const title = m[0].trim(), artist = (m[1] || "").trim();
+      const k = norm(title) + "|" + norm(artist);
+      if (!title || have.has(k)) continue;
+      have.add(k);
+      try {
+        await writeSong(newId(), { title, artist, status: pasteStatus, capo: 0, noCapoOk: false, easySing: false, fingerpicking: false, lang, key: "", notes: "", created: new Date().toISOString() });
+        added++;
+      } catch (err) { toast(`Stopped after ${added} songs. Try the rest again.`); return; }
+    }
+    $("p-text").value = "";
+    closeSheet(); view.status = pasteStatus; saveView(); render();
+    toast(added ? `Added ${added} song${added === 1 ? "" : "s"}` : "Those songs are already in your list");
+  };
+
+  // ---------- setlists ----------
+  let setConfirm = false;
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  async function saveSet(sl, patch) {
+    const cur = setlists.find(x => x.id === sl.id) || sl;
+    try { await writeDoc("setlists", sl.id, { ...clean(cur), ...patch }); }
+    catch (e) { toast("Couldn't save. Try again in a moment."); }
+  }
+  function move(sl, ids, i, d) {
+    const next = ids.slice(); [next[i], next[i + d]] = [next[i + d], next[i]];
+    saveSet(sl, { songIds: next });
+  }
+  async function newSetlist() {
+    const id = newId();
+    const name = "Setlist for " + new Date().toLocaleDateString(undefined, { day: "numeric", month: "short" });
+    try { await writeDoc("setlists", id, { name, songIds: [], created: new Date().toISOString() }); }
+    catch (e) { toast("Couldn't create the setlist. Try again in a moment."); return; }
+    view.status = "sets"; view.setId = id; setConfirm = false; saveView(); render();
+  }
+  function renderSets() {
+    const box = $("sets"); box.replaceChildren();
+    const sl = setlists.find(x => x.id === view.setId);
+    $("add").hidden = !!sl;
+    if (!sl) {
+      if (!setlists.length) {
+        const e = el("div", "empty");
+        e.append(el("h2", null, "Plan what to play"),
+          el("p", null, "Make a setlist for a jam, a campfire or a night with friends. Pick the songs yourself or let the app choose a few at random."));
+        const b = el("button", "btn", "+ New setlist"); b.onclick = newSetlist; e.append(b);
+        box.append(e); return;
+      }
+      const g = el("div"); g.style.cssText = "display:grid;gap:10px";
+      for (const x of setlists.slice().sort((a, b) => (b.created || "").localeCompare(a.created || ""))) {
+        const ids = (x.songIds || []).filter(songById);
+        const c = el("button", "set-card"); c.type = "button";
+        c.append(el("span", "name", x.name || "Untitled setlist"),
+          el("span", "sub", ids.length ? `${plural(ids.length, "song")} · ${ids.slice(0, 3).map(i => songById(i).title).join(", ")}${ids.length > 3 ? "…" : ""}` : "No songs yet"));
+        c.onclick = () => { view.setId = x.id; setConfirm = false; saveView(); render(); };
+        g.append(c);
+      }
+      box.append(g); return;
+    }
+    const ids = (sl.songIds || []).filter(songById);
+    const head = el("div", "set-head");
+    const back = el("button", "btn ghost small", "‹ All setlists"); back.style.justifySelf = "start";
+    back.onclick = () => { view.setId = null; setConfirm = false; saveView(); render(); };
+    const name = el("input", "set-name"); name.id = "set-name"; name.value = sl.name || ""; name.placeholder = "Setlist name"; name.setAttribute("aria-label", "Setlist name");
+    name.onchange = () => saveSet(sl, { name: name.value.trim() || "Untitled setlist" });
+    const easy = ids.filter(i => songById(i).easySing).length, open = ids.filter(i => !songById(i).capo).length;
+    const meta = el("div", "sub", ids.length ? `${plural(ids.length, "song")} · ${open} without capo · ${easy} easy to sing` : "Add some songs to get started");
+    const row = el("div", "row");
+    const add = el("button", "btn small", "+ Add songs"); add.onclick = () => openPicker(sl);
+    row.append(add);
+    head.append(back, name, meta, row); box.append(head);
+    const ul = el("ul", "list");
+    ids.forEach((id, i) => {
+      const s = songById(id);
+      const li = el("li", "set-song");
+      const fret = el("div", "fret" + (s.capo ? "" : " open")); fret.append(s.capo ? String(s.capo) : "0", el("small", null, s.capo ? "capo" : "open"));
+      const m = el("div", "meta"); m.style.cursor = "pointer";
+      m.append(el("div", "title", s.title), el("div", "sub", s.artist || "Unknown artist"));
+      const lk = el("div", "links"); linkChips(s, lk); if (!lk.hidden) { lk.style.marginTop = "6px"; m.append(lk); }
+      m.onclick = (e) => { if (!e.target.closest("a")) openForm(id); };
+      const ctl = el("div", "ctl");
+      const mk = (t, label, fn, dis) => { const b = el("button", null, t); b.type = "button"; b.disabled = !!dis; b.setAttribute("aria-label", label); b.onclick = fn; return b; };
+      ctl.append(mk("↑", "Move up", () => move(sl, ids, i, -1), i === 0),
+        mk("↓", "Move down", () => move(sl, ids, i, 1), i === ids.length - 1),
+        mk("×", "Remove from setlist", () => saveSet(sl, { songIds: ids.filter(x => x !== id) })));
+      li.append(el("span", "num", String(i + 1)), fret, m, ctl); ul.append(li);
+    });
+    box.append(ul);
+    const foot = el("div"); foot.style.cssText = "margin-top:24px;display:grid;gap:8px;justify-items:start";
+    if (!setConfirm) { const d = el("button", "btn danger", "Delete setlist"); d.onclick = () => { setConfirm = true; render(); }; foot.append(d); }
+    else {
+      const c = el("div", "confirm"); c.append(el("span", null, "Delete this setlist? The songs stay in your lists."));
+      const r = el("div"); r.style.cssText = "display:flex;gap:8px";
+      const y = el("button", "btn", "Delete"); y.style.cssText = "background:#c0392b;color:#fff";
+      y.onclick = async () => { try { await removeDoc("setlists", sl.id); view.setId = null; setConfirm = false; saveView(); render(); toast("Setlist deleted"); } catch (e) { toast("Couldn't delete. Try again in a moment."); } };
+      const n = el("button", "btn ghost", "Keep it"); n.onclick = () => { setConfirm = false; render(); };
+      r.append(y, n); c.append(r); foot.append(c);
+    }
+    box.append(foot);
+  }
+
+  // ---------- add songs to a setlist ----------
+  let pickerSet = null, picked = new Set();
+  const kf = { q: "", nocapo: false, easy: false, learning: false, lang: "" };
+  function pickerPool() {
+    const q = norm(kf.q), cur = setlists.find(x => x.id === pickerSet.id) || pickerSet, inSet = new Set(cur.songIds || []);
+    return songs.filter(s => !inSet.has(s.id) && (PLAYABLE.includes(s.status) || (kf.learning && s.status === "tab")))
+      .filter(s => !q || norm(s.title).includes(q) || norm(s.artist).includes(q))
+      .filter(s => !kf.nocapo || !s.capo || s.noCapoOk)
+      .filter(s => !kf.easy || s.easySing)
+      .filter(s => !kf.lang || norm(s.lang) === norm(kf.lang))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }
+  const countPicked = () => { $("k-count").textContent = picked.size ? `${picked.size} selected` : ""; $("k-add").disabled = !picked.size; $("k-add").textContent = picked.size ? `Add ${picked.size}` : "Add"; };
+  function renderPicker() {
+    for (const [id, k] of [["k-nocapo", "nocapo"], ["k-easy", "easy"], ["k-learning", "learning"]]) $(id).setAttribute("aria-pressed", String(kf[k]));
+    const langs = [...new Set(songs.map(s => (s.lang || "").trim()).filter(Boolean))].sort();
+    const kl = $("k-lang"); kl.replaceChildren(new Option("Any language", ""), ...langs.map(l => new Option(l, l))); kl.value = kf.lang; kl.hidden = !langs.length;
+    const ul = $("k-list"); ul.replaceChildren();
+    const pool = pickerPool();
+    for (const s of pool) {
+      const li = el("li"), lab = el("label"), cb = el("input"); cb.type = "checkbox"; cb.checked = picked.has(s.id);
+      cb.onchange = () => { cb.checked ? picked.add(s.id) : picked.delete(s.id); countPicked(); };
+      const m = el("span", "meta"); m.append(el("div", "title", s.title), el("div", "sub", s.artist || "Unknown artist"));
+      lab.append(cb, m, el("span", "played", s.capo ? `Capo ${s.capo}` : "No capo")); li.append(lab); ul.append(li);
+    }
+    if (!pool.length) { const li = el("li", "sub", songs.length ? "No more songs match these filters." : "Add some songs first."); li.style.padding = "12px"; ul.append(li); }
+    countPicked();
+  }
+  function openPicker(sl) {
+    pickerSet = sl; picked = new Set(); kf.q = ""; $("k-q").value = "";
+    $("form").hidden = $("paste").hidden = true; $("picker").hidden = false; $("scrim").hidden = false;
+    renderPicker();
+  }
+  $("k-random").onclick = () => {
+    const pool = pickerPool().filter(s => !picked.has(s.id));
+    if (!pool.length) { toast("No more songs match these filters"); return; }
+    const keyed = pool.map(s => ({ s, k: Math.random() })).sort((a, b) => b.k - a.k);
+    keyed.slice(0, +$("k-n").value).forEach(x => picked.add(x.s.id));
+    renderPicker();
+  };
+  $("k-q").oninput = (e) => { kf.q = e.target.value; renderPicker(); };
+  $("k-nocapo").onclick = () => { kf.nocapo = !kf.nocapo; renderPicker(); };
+  $("k-easy").onclick = () => { kf.easy = !kf.easy; renderPicker(); };
+  $("k-learning").onclick = () => { kf.learning = !kf.learning; renderPicker(); };
+  $("k-lang").onchange = (e) => { kf.lang = e.target.value; renderPicker(); };
+  $("k-cancel").onclick = closeSheet;
+  $("picker").onsubmit = async (e) => {
+    e.preventDefault(); if (!picked.size) return;
+    const cur = setlists.find(x => x.id === pickerSet.id) || pickerSet;
+    const n = picked.size;
+    await saveSet(cur, { songIds: [...(cur.songIds || []), ...picked] });
+    closeSheet(); toast(`Added ${plural(n, "song")}`);
+  };
+
+  // ---------- wiring ----------
+  document.querySelector(".tabs").onclick = (e) => { const t = e.target.closest(".tab"); if (t) { view.status = t.dataset.status; saveView(); render(); } };
+  $("q").oninput = (e) => { view.q = e.target.value; render(); };
+  $("f-nocapo").onclick = () => { view.nocapo = !view.nocapo; saveView(); render(); };
+  $("f-easy").onclick = () => { view.easy = !view.easy; saveView(); render(); };
+  $("f-finger").onclick = () => { view.finger = !view.finger; saveView(); render(); };
+  $("f-lang").onchange = (e) => { view.lang = e.target.value; saveView(); render(); };
+  $("sort").onchange = (e) => { view.sort = e.target.value; saveView(); render(); };
+  $("add").onclick = () => view.status === "sets" ? newSetlist() : openForm();
+  $("shuffle").onclick = shuffle;
+  $("pick").onclick = () => { if (pickId) openForm(pickId); };
+  $("list").addEventListener("click", (e) => { const li = e.target.closest(".song"); if (li) openForm(li.dataset.id); });
+  $("list").addEventListener("keydown", (e) => { if (e.key === "Enter") { const li = e.target.closest(".song"); if (li) openForm(li.dataset.id); } });
+
+  // ---------- backup / restore ----------
+  const BACKUP_KEY = "repertoire-last-backup";
+  function backupNote() {
+    let last = null; try { last = localStorage.getItem(BACKUP_KEY); } catch (e) {}
+    $("backup-note").textContent = last
+      ? `Last backup: ${new Date(last).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}. Back up again after adding songs.`
+      : "Save a backup to iCloud Drive now and then, so you never lose them.";
+  }
+  $("do-backup").onclick = async () => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    const json = JSON.stringify({ app: "repertoire", version: 1, exported: new Date().toISOString(), songs, setlists }, null, 2);
+    const name = `repertoire-backup-${stamp}.json`;
+    const file = new File([json], name, { type: "application/json" });
+    const mark = () => { try { localStorage.setItem(BACKUP_KEY, new Date().toISOString()); } catch (e) {} backupNote(); };
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Repertoire backup" });
+        mark(); toast("Backup ready. Choose Save to Files to keep it in iCloud Drive."); return;
+      }
+    } catch (e) { if (e && e.name === "AbortError") return; }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(file); a.download = name; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    mark(); toast("Backup downloaded");
+  };
+  $("restore-file").onchange = async (e) => {
+    const f = e.target.files && e.target.files[0]; e.target.value = "";
+    if (!f) return;
+    let data;
+    try { data = JSON.parse(await f.text()); } catch (err) { toast("That file isn't a Repertoire backup"); return; }
+    if (!data || !Array.isArray(data.songs)) { toast("That file isn't a Repertoire backup"); return; }
+    const inSongs = data.songs.filter(x => x && x.id && x.title).map(fixStatus);
+    const inSets = (Array.isArray(data.setlists) ? data.setlists : []).filter(x => x && x.id);
+    const have = new Set(songs.map(x => x.id));
+    const fresh = inSongs.filter(x => !have.has(x.id)).length;
+    const box = $("restore-confirm"); box.replaceChildren();
+    box.append(el("span", null, `This backup has ${inSongs.length} song${inSongs.length === 1 ? "" : "s"} and ${inSets.length} setlist${inSets.length === 1 ? "" : "s"}. ${fresh} song${fresh === 1 ? " is" : "s are"} new here. Songs already on this phone are updated from the backup, and nothing is deleted.`));
+    const r = el("div"); r.style.cssText = "display:flex;gap:8px";
+    const y = el("button", "btn", "Restore"); y.type = "button";
+    const n = el("button", "btn ghost", "Cancel"); n.type = "button";
+    y.onclick = () => {
+      const merge = (arr, incoming) => { for (const x of incoming) { const i = arr.findIndex(a => a.id === x.id); if (i >= 0) arr[i] = x; else arr.push(x); } };
+      merge(songs, inSongs.map(x => { const { lastPlayed, ...rest } = x; return rest; })); merge(setlists, inSets);
+      try { local.save(); } catch (err) { return; }
+      box.hidden = true; render(); toast(`Restored ${inSongs.length} song${inSongs.length === 1 ? "" : "s"}`);
+    };
+    n.onclick = () => { box.hidden = true; };
+    r.append(y, n); box.append(r); box.hidden = false;
+  };
+
+  // ---------- boot ----------
+  render();
+  local.load(); render(); backupNote();
+  // Ask Safari to keep this site's data even when space runs low.
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
