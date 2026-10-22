@@ -109,7 +109,8 @@ main { padding-block: 16px 120px; display: grid; gap: 16px; }
   background: var(--chip); font: 800 1.05rem/1 var(--display); font-variant-numeric: tabular-nums;
 }
 .fret small { display: block; font: 600 .55rem/1 var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
-.fret.open { color: var(--know); }
+.fret.open { background: transparent; border: 1px dashed var(--line); }
+.fret.open small { margin-top: 0; line-height: 1.15; }
 .meta { min-width: 0; }
 .title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sub { color: var(--muted); font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -507,7 +508,7 @@ label.btn { cursor: pointer; }
     for (const s of list) {
       const li = el("li", "song"); li.tabIndex = 0; li.dataset.id = s.id;
       const fret = el("div", "fret" + (s.capo ? "" : " open"));
-      fret.append(s.capo ? String(s.capo) : "0", el("small", null, s.capo ? "capo" : "open"));
+      fret.append(...(s.capo ? [String(s.capo), el("small", null, "capo")] : [el("small", null, "no capo")]));
       fret.title = s.capo ? `Capo on fret ${s.capo}` : "No capo";
       const meta = el("div", "meta");
       meta.append(el("div", "title", s.title), el("div", "sub", s.artist || "Unknown artist"));
@@ -799,7 +800,7 @@ label.btn { cursor: pointer; }
     ids.forEach((id, i) => {
       const s = songById(id);
       const li = el("li", "set-song");
-      const fret = el("div", "fret" + (s.capo ? "" : " open")); fret.append(s.capo ? String(s.capo) : "0", el("small", null, s.capo ? "capo" : "open"));
+      const fret = el("div", "fret" + (s.capo ? "" : " open")); fret.append(...(s.capo ? [String(s.capo), el("small", null, "capo")] : [el("small", null, "no capo")]));
       const m = el("div", "meta"); m.style.cursor = "pointer";
       m.append(el("div", "title", s.title), el("div", "sub", s.artist || "Unknown artist"));
       const lk = el("div", "links"); linkChips(s, lk); if (!lk.hidden) { lk.style.marginTop = "6px"; m.append(lk); }
